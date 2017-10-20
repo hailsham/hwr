@@ -14,7 +14,7 @@ import torch.utils.data as Data
 traindata = np.load('/home/Lei/data/class200data.npy')
 label = np.load('/home/Lei/data/class200label.npy')
 traindata = traindata.astype('float32')
-traindata = traindata - np.mead(traindata)
+traindata = traindata - np.mean(traindata)
 #reshape 64  label 0-
 traindata = traindata.reshape(len(traindata), 1,64, 64)
 #
