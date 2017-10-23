@@ -13,19 +13,31 @@ import torch.utils.data as Data
 traindata = np.load('/home/Lei/data/class200data.npy')
 label = np.load('/home/Lei/data/class200label.npy')
 traindata = traindata.astype('float32')
-
-traindata = traindata- np.mean(traindata)
-#reshape 64  label 0-
+train_mean = np.mean(traindata)
+traindata = traindata - train_mean
 traindata = traindata.reshape(len(traindata), 1,64, 64)
 #
-print 'the size of class200:  ' + str(len(traindata))
-
+print 'the size of class200:   ' + str(len(traindata))
 
 train_x = torch.from_numpy(traindata)
 label = torch.from_numpy(label)
 data_torch = Data.TensorDataset(data_tensor= train_x, target_tensor= label)
+trainloader = torch.utils.data.DataLoader(data_torch, batch_size = 10, shuffle = True)
 
-trainloader = torch.utils.data.DataLoader(data_torch, batch_size = 10, shuffle = True, num_workers = 4)
+
+testdata = np.load('/home/Lei/data/class200testdata.npy')
+testlabel = np.load('/home/Lei/data/class200testlabel.npy')
+testdata = testdata.astype('float32')
+testdata = testdata - train_mean
+testdata = testdata.reshape(len(testdata), 1,64, 64)
+
+print 'the size of test:   ' + str(len(testdata))
+
+test_x = torch.from_numpy(testdata)
+testlabel = torch.from_numpy(testlabel)
+testdata_torch = Data.TensorDataset(data_tensor= test_x, target_tensor= testlabel)
+testloader = torch.utils.data.DataLoader(testdata_torch, batch_size = 10)
+
 
 import torch.nn as nn
 import torch.nn.functional as F
@@ -61,11 +73,13 @@ import torch.optim as optim
 from torch.autograd import Variable
 
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+optimizer = optim.SGD(net.parameters(), lr=0.0001, momentum=0.9)
 
-print 'start training: \n'
-for epoch in range(5): # loop over the dataset multiple times
+print 'start training: '
+for epoch in range(2): # loop over the dataset multiple times
     
+    train_correct = 0
+    train_acc=0.
     running_loss = 0.0
     for i, data in enumerate(trainloader, 0):
         # get the inputs
@@ -79,17 +93,34 @@ for epoch in range(5): # loop over the dataset multiple times
         
         # forward + backward + optimize
         outputs = net(inputs)
+        train_pred = torch.max(outputs,1)[1]
+        
+        train_correct = (train_pred == labels).sum()
+        train_acc += train_correct.data[0]
         loss = criterion(outputs, labels)
         loss.backward()        
         optimizer.step()
         
         # print statistics
         running_loss += loss.data[0]
-	if i == 1:
-	    print('the first loss: %.3f' % (running_loss ) )
-        if i % 200 == 199: # print every 2000 mini-batches
-            print('[%d, %5d] loss: %.3f' % (epoch+1, i+1, running_loss / 200))
+        if i % 1000 == 999: # print every 2000 mini-batches
+            print('[%d, %5d] loss: %.5f' % (epoch+1, i+1, running_loss / 1000))
             running_loss = 0.0
+            
+    print 'the trainset acc:  %.5f %%'  % (100 * float(train_acc) / len(data_torch))
+        
+    correct = 0
+    total = 0
+    for testdata in testloader:
+        x, y = testdata
+        x = x.cuda()
+        y = y.cuda()
+        o = net(Variable(x))
+        _, predicted = torch.max(o.data, 1)
+        total += y.size(0)
+        correct += (predicted == y).sum()
+
+    print('the test acc: %d %%' % (100 * correct / total))
 print('Finished Training')
 
 
