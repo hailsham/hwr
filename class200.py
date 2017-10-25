@@ -71,17 +71,21 @@ net.cuda()
 
 import torch.optim as optim
 from torch.autograd import Variable
+from torch.optim.lr_scheduler import MultiStepLR
 
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(net.parameters(), lr=0.0001, momentum=0.9)
+optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+scheduler = MultiStepLR(optimizer, milestones=[5,10 ], gamma=0.5)
+
 
 print 'start training: '
-for epoch in range(2): # loop over the dataset multiple times
+for epoch in range(15): # loop over the dataset multiple times
     
     train_correct = 0
     train_acc=0.
     running_loss = 0.0
     for i, data in enumerate(trainloader, 0):
+	scheduler.step()
         # get the inputs
         inputs, labels = data
         #inputs = inputs.view(-1,1,64,64)
@@ -100,7 +104,8 @@ for epoch in range(2): # loop over the dataset multiple times
         loss = criterion(outputs, labels)
         loss.backward()        
         optimizer.step()
-        
+       #	scheduler.step()
+	 
         # print statistics
         running_loss += loss.data[0]
         if i % 1000 == 999: # print every 2000 mini-batches
