@@ -52,6 +52,7 @@ class Net(nn.Module):
         self.pool2 = nn.MaxPool2d(2,2)
         self.conv3 = nn.Conv2d(128,256,kernel_size=3,padding=1)
         self.pool3 = nn.MaxPool2d(2,2)
+        self.drop = nn.Dropout()
         self.fc1   = nn.Linear( 256*8*8 , 1024)
         self.fc2   = nn.Linear(1024,200)
 
@@ -61,8 +62,9 @@ class Net(nn.Module):
         x = self.pool2(F.relu(self.conv2(x)))
         x = self.pool3(F.relu(self.conv3(x)))
         x = x.view(-1, 256*8*8)
-        x = F.relu(self.fc1(x))
+        x = F.relu(self.drop(self.fc1(x)))
         x = self.fc2(x)
+        x = F.softmax()
         return x
 
 net = Net()
@@ -71,11 +73,11 @@ net.cuda()
 
 import torch.optim as optim
 from torch.autograd import Variable
-from torch.optim.lr_scheduler import MultiStepLR
+from torch.optim.lr_scheduler import StepLR
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
-scheduler = MultiStepLR(optimizer, milestones=[5,10 ], gamma=0.5)
+scheduler = StepLR(optimizer, step_size=3, gamma=0.5)
 
 
 print 'start training: '
@@ -125,7 +127,7 @@ for epoch in range(15): # loop over the dataset multiple times
         total += y.size(0)
         correct += (predicted == y).sum()
 
-    print('the test acc: %d %%' % (100 * correct / total))
+    print('the test acc: %.3f %%' % (100 * correct / total))
 print('Finished Training')
 
 
