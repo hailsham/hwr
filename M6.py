@@ -46,13 +46,14 @@ import torch.nn.functional as F
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(1,64,kernel_size=3,padding=1)
+        self.conv1 = nn.Conv2d(1,80,kernel_size=3,padding=1)
         self.pool1 = nn.MaxPool2d(2,2)
-        self.conv2 = nn.Conv2d(64, 128, kernel_size=3,padding=1)
+        self.conv2 = nn.Conv2d(80, 160, kernel_size=3,padding=1)
         self.pool2 = nn.MaxPool2d(2,2)
-        self.conv3 = nn.Conv2d(128,256,kernel_size=3,padding=1)
+        self.conv3 = nn.Conv2d(160,320,kernel_size=3,padding=1)
         self.pool3 = nn.MaxPool2d(2,2)
-        self.fc1   = nn.Linear( 256*8*8 , 1024)
+	self.conv4 = nn.Conv2d(320,640,kernel_size=3, padding=1)
+        self.fc1   = nn.Linear( 640*4*4 , 1024)
         self.fc2   = nn.Linear(1024,200)
 	self.drop  = nn.Dropout()
 
@@ -60,7 +61,8 @@ class Net(nn.Module):
         x = self.pool1(F.relu(self.conv1(x)))
         x = self.pool2(F.relu(self.conv2(x)))
         x = self.pool3(F.relu(self.conv3(x)))
-        x = x.view(-1, 256*8*8)
+       	x = self.pool3(F.relu(self.conv4(x)))
+	x = x.view(-1, 640*4*4)
         x = F.relu(self.drop(self.fc1(x)))
         x = self.fc2(x)
   #      x = F.softmax(x)
@@ -68,6 +70,7 @@ class Net(nn.Module):
 
 net = Net()
 net.cuda()
+net = nn.DataParallel(net)
 #print(net)
 
 from torch.nn.init import xavier_normal
@@ -87,7 +90,7 @@ from torch.optim.lr_scheduler import StepLR
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=0.01, momentum=0.9)
-scheduler = MultiStepLR(optimizer, milestones=[3,6,9,12 ], gamma=0.5)
+scheduler = MultiStepLR(optimizer, milestones=[3,6,9,12 ], gamma=0.4)
 lrer = StepLR(optimizer, step_size = 3, gamma=0.5)
 
 print 'start training: '
@@ -119,8 +122,8 @@ for epoch in range(15): # loop over the dataset multiple times
        #	scheduler.step()
         # print statistics
         running_loss += loss.data[0]
-        if i % 1000 == 999: # print every 2000 mini-batches
-            print('[%d, %5d] loss: %.5f' % (epoch+1, i+1, running_loss / 1000))
+        if i % 500 == 499: # print every 2000 mini-batches
+            print('[%d, %5d] loss: %.5f' % (epoch+1, i+1, running_loss / 500))
             running_loss = 0.0
             
     print 'the trainset acc:  %.5f %%'  % (100 * float(train_acc) / len(data_torch))
