@@ -52,6 +52,7 @@ class Net(nn.Module):
         self.pool2 = nn.MaxPool2d(2,2)
         self.conv3 = nn.Conv2d(128,256,kernel_size=3,padding=1)
         self.pool3 = nn.MaxPool2d(2,2)
+        self.drop = nn.Dropout()
         self.fc1   = nn.Linear( 256*8*8 , 1024)
         self.fc2   = nn.Linear(1024,200)
 	self.drop  = nn.Dropout()
@@ -63,7 +64,6 @@ class Net(nn.Module):
         x = x.view(-1, 256*8*8)
         x = F.relu(self.drop(self.fc1(x)))
         x = self.fc2(x)
-  #      x = F.softmax(x)
         return x
 
 net = Net()
@@ -82,6 +82,7 @@ net.apply(weights_init)
 
 import torch.optim as optim
 from torch.autograd import Variable
+<<<<<<< HEAD
 from torch.optim.lr_scheduler import MultiStepLR
 from torch.optim.lr_scheduler import StepLR
 
@@ -89,6 +90,13 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=0.01, momentum=0.9)
 scheduler = MultiStepLR(optimizer, milestones=[3,6,9,12 ], gamma=0.5)
 lrer = StepLR(optimizer, step_size = 3, gamma=0.5)
+=======
+from torch.optim.lr_scheduler import StepLR
+
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+scheduler = StepLR(optimizer, step_size=3, gamma=0.5)
+
 
 print 'start training: '
 for epoch in range(15): # loop over the dataset multiple times
